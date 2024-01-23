@@ -3,7 +3,7 @@ TabWidth: 4
 IndentWidth: 4
 UseTab: Never
 
-AllowShortLambdasOnASingleLine: Inline
+AllowShortLambdasOnASingleLine: All
 ReflowComments: false
 SortIncludes: true
 SortUsingDeclarations: true
@@ -34,7 +34,7 @@ ColumnLimit: 90
 AllowAllParametersOfDeclarationOnNextLine: true
 AllowShortBlocksOnASingleLine: false
 AllowShortCaseLabelsOnASingleLine: false
-AllowShortFunctionsOnASingleLine: None
+AllowShortFunctionsOnASingleLine: Inline
 AllowShortIfStatementsOnASingleLine: false
 AllowShortLoopsOnASingleLine: false
 AlwaysBreakTemplateDeclarations: Yes
