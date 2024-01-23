@@ -6,6 +6,8 @@
 #include <iostream>
 #include <vector>
 
+#include "generator.hpp"
+
 auto example(const std::vector<int>& vec) -> iter::iterator auto {
     auto filter = [](const int& i) { return (i % 2) == 0; };
     return iter::iter(vec) //

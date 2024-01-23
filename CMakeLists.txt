@@ -13,3 +13,4 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_executable(test test.cpp)
+add_executable(examples examples.cpp)
