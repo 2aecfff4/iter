@@ -3,6 +3,7 @@
 
 namespace iter {
 
+///
 template <typename T, typename Self>
 class [[nodiscard]] Iterator;
 
@@ -10,6 +11,11 @@ class [[nodiscard]] Iterator;
 template <iterator I, std::predicate<typename I::Type&> PredicateFn>
 class [[nodiscard]] Filter;
 
+///
+template <iterator I, std::invocable<typename I::Type> MapFn>
+class [[nodiscard]] Map;
+
+///
 template <iterator I>
 class [[nodiscard]] CppIterator;
 

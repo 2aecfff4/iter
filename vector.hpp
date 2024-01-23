@@ -1,5 +1,6 @@
 #pragma once
 #include "iterator.hpp"
+#include "iterator_traits.hpp"
 #include <vector>
 
 namespace iter {
@@ -12,20 +13,13 @@ private:
     std::size_t m_cursor = 0;
 
 public:
-    VecIteratorAdaptor(Container* container)
-        : m_container(container) {
-    }
-
-    // VecIteratorAdaptor(const VecIteratorAdaptor&) = delete;
-    // VecIteratorAdaptor& operator=(const VecIteratorAdaptor&) = delete;
-
-    // VecIteratorAdaptor(VecIteratorAdaptor&&) = default;
-    // VecIteratorAdaptor& operator=(VecIteratorAdaptor&&) = default;
+    explicit VecIteratorAdaptor(Container* container)
+        : m_container(container) {}
 
 public:
     ///
     [[nodiscard]]
-    constexpr auto next() -> optional<T> {
+    constexpr auto next() -> Optional<T> {
         if (m_cursor < m_container->size()) {
             const std::size_t cursor = m_cursor;
             m_cursor += 1;
@@ -35,13 +29,28 @@ public:
     }
 };
 
+///
 template <typename T, typename Allocator>
 [[nodiscard]]
 constexpr auto iter(std::vector<T, Allocator>& vec) {
-    using Type = Iterator<
-        std::vector<T, Allocator>,
-        VecIteratorAdaptor<T&, std::vector<T, Allocator>>>;
-    return Type(VecIteratorAdaptor<T&, std::vector<T, Allocator>>(&vec));
+    using reference = typename std::vector<T, Allocator>::reference;
+    using Traits = IteratorTraits<reference>;
+    using Type
+        = Iterator<Traits, VecIteratorAdaptor<reference, std::vector<T, Allocator>>>;
+
+    return Type(VecIteratorAdaptor<reference, std::vector<T, Allocator>>(&vec));
+}
+
+///
+template <typename T, typename Allocator>
+[[nodiscard]]
+constexpr auto iter(const std::vector<T, Allocator>& vec) {
+    using reference = typename std::vector<T, Allocator>::const_reference;
+    using Traits = IteratorTraits<reference>;
+    using Type
+        = Iterator<Traits, VecIteratorAdaptor<reference, const std::vector<T, Allocator>>>;
+
+    return Type(VecIteratorAdaptor<reference, const std::vector<T, Allocator>>(&vec));
 }
 
 } // namespace iter

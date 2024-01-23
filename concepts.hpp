@@ -9,7 +9,7 @@ namespace iter {
 template <typename I>
 concept iterator = requires(I i) {
     typename I::Type;
-    { i.next() } -> std::same_as<iter::optional<typename I::Type>>;
+    { i.next() } -> std::same_as<Optional<typename I::Type>>;
 };
 
 } // namespace iter
