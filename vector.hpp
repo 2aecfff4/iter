@@ -3,7 +3,10 @@
 #include "iterator_traits.hpp"
 #include <vector>
 
+
 namespace iter {
+
+namespace vector_impl {
 
 ///
 template <typename T, typename Container>
@@ -29,10 +32,14 @@ public:
     }
 };
 
+} // namespace vector_impl
+
 ///
 template <typename T, typename Allocator>
 [[nodiscard]]
 constexpr auto iter(std::vector<T, Allocator>& vec) {
+    using namespace vector_impl;
+
     using reference = typename std::vector<T, Allocator>::reference;
     using Traits = IteratorTraits<reference>;
     using Type
@@ -45,6 +52,8 @@ constexpr auto iter(std::vector<T, Allocator>& vec) {
 template <typename T, typename Allocator>
 [[nodiscard]]
 constexpr auto iter(const std::vector<T, Allocator>& vec) {
+    using namespace vector_impl;
+
     using reference = typename std::vector<T, Allocator>::const_reference;
     using Traits = IteratorTraits<reference>;
     using Type
