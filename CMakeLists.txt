@@ -12,5 +12,11 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+add_library(iter INTERFACE)
+target_include_directories(iter INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+
 add_executable(test test.cpp)
+target_link_libraries(test PUBLIC iter)
+
 add_executable(examples examples.cpp)
+target_link_libraries(examples PUBLIC iter)
