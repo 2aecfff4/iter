@@ -41,6 +41,13 @@ public:
 
 public:
     ///
+    template <typename Self>
+    [[nodiscard]]
+    constexpr auto enumerate(this Self&& self) {
+        return Enumerate(std::forward<Self>(self));
+    }
+
+    ///
     template <typename Self, std::predicate<Type> PredicateFn>
     [[nodiscard]]
     constexpr auto filter(this Self&& self, PredicateFn&& predicate) {

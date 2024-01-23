@@ -8,6 +8,10 @@ template <typename T, typename Self>
 class [[nodiscard]] Iterator;
 
 ///
+template <iterator I>
+class [[nodiscard]] Enumerate;
+
+///
 template <iterator I, std::predicate<typename I::Type&> PredicateFn>
 class [[nodiscard]] Filter;
 
