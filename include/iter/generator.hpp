@@ -1,27 +1,33 @@
 #pragma once
 #include "iter/iterator.hpp"
 #include "iter/iterator_traits.hpp"
-#include "iter/optional.hpp"
 #include <concepts>
+#include <type_traits>
 
 namespace iter {
 
 namespace generator_impl {
 
+template <typename T>
+concept number = std::totally_ordered<T> && std::weakly_incrementable<T>;
+
+} // namespace generator_impl
+
 ///
-template <bool has_to, typename IteratorTraits>
-class GeneratorIteratorAdaptor {
+template <bool has_to, typename IteratorTraits, generator_impl::number T>
+class Generator : public Iterator<
+                      IteratorTraits, //
+                      Generator<has_to, IteratorTraits, T>> {
 public:
-    using Traits = IteratorTraits;
-    using Type = typename Traits::Type;
+    using reference = T;
 
 private:
-    Type m_from;
-    Type m_to;
-    Type m_current;
+    T m_from;
+    T m_to;
+    T m_current;
 
 public:
-    constexpr GeneratorIteratorAdaptor(const Type from, const Type to)
+    constexpr Generator(const T from, const T to)
         : m_from(from)
         , m_to(to)
         , m_current(from) {}
@@ -29,69 +35,71 @@ public:
 public:
     ///
     [[nodiscard]]
-    constexpr auto next() -> Optional<Type> {
+    constexpr auto next() -> Optional<reference> {
         if (m_current < m_to) {
-            const Type current = m_current;
-            m_current += 1;
+            T current = m_current;
+            ++m_current;
             return current;
         }
 
         return nullopt;
     }
+
+    ///
+    template <typename Acc, std::invocable<Acc, reference> FoldFn>
+    constexpr auto fold(Acc acc, FoldFn fn) -> Acc {
+        while (auto value = this->next()) {
+            acc = fn(acc, *value);
+        }
+
+        return acc;
+    }
 };
 
 ///
-template <typename IteratorTraits>
-class GeneratorIteratorAdaptor<false, IteratorTraits> {
+template <typename IteratorTraits, generator_impl::number T>
+class Generator<false, IteratorTraits, T>
+    : public Iterator<IteratorTraits, Generator<false, IteratorTraits, T>> {
 public:
-    using Traits = IteratorTraits;
-    using Type = typename Traits::Type;
+    using reference = T;
 
 private:
-    Type m_from;
-    Type m_current;
+    T m_from;
+    T m_current;
 
 public:
-    explicit constexpr GeneratorIteratorAdaptor(const Type from)
+    constexpr explicit Generator(const T from)
         : m_from(from)
         , m_current(from) {}
 
 public:
     ///
     [[nodiscard]]
-    constexpr auto next() -> Optional<Type> {
-        const Type current = m_current;
-        m_current += 1;
+    constexpr auto next() -> Optional<reference> {
+        T current = m_current;
+        ++m_current;
         return current;
     }
+
+    ///
+    template <typename Acc, std::invocable<Acc, reference> FoldFn>
+    constexpr auto fold(Acc acc, FoldFn fn) -> Acc = delete;
 };
 
-} // namespace generator_impl
-
 ///
-template <std::integral T>
+template <generator_impl::number T>
 [[nodiscard]]
 constexpr auto gen(const T from) {
-    using namespace generator_impl;
-
     using Traits = IteratorTraits<T>;
-    using GeneratorAdaptor = GeneratorIteratorAdaptor<false, Traits>;
-    using Type = Iterator<Traits, GeneratorAdaptor>;
-
-    return Type(GeneratorAdaptor(from));
+    return Generator<false, Traits, T>(from);
 }
 
 ///
-template <std::integral T>
+template <generator_impl::number T>
 [[nodiscard]]
 constexpr auto gen(const T from, const T to) {
-    using namespace generator_impl;
-
     using Traits = IteratorTraits<T>;
-    using GeneratorAdaptor = GeneratorIteratorAdaptor<true, Traits>;
-    using Type = Iterator<Traits, GeneratorAdaptor>;
-
-    return Type(GeneratorAdaptor(from, to));
+    return Generator<true, Traits, T>(from, to);
 }
 
 } // namespace iter

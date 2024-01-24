@@ -7,35 +7,25 @@
 namespace iter {
 
 ///
-template <typename IteratorTraits, typename Impl>
-class [[nodiscard]] Iterator : Impl {
+template <typename IteratorTraits, typename Derived>
+class Iterator {
 public:
-    using Traits = IteratorTraits;
-    using Type = typename Traits::Type;
-
-public:
-    constexpr explicit Iterator(Impl self)
-        : Impl(std::move(self)) {}
+    using reference = reference_t<IteratorTraits>;
 
 private:
-    // template <typename Selfs>
-    // void self(this Selfs&& s) {
-    // }
-
     [[nodiscard]]
-    constexpr auto self() -> Impl& {
-        return static_cast<Impl&>(*this);
+    constexpr auto self() -> Derived& {
+        return static_cast<Derived&>(*this);
     }
 
     [[nodiscard]]
-    constexpr auto self() const -> const Impl& {
-        return static_cast<const Impl&>(*this);
+    constexpr auto self() const -> const Derived& {
+        return static_cast<const Derived&>(*this);
     }
 
 public:
-    ///
     [[nodiscard]]
-    constexpr auto next() -> Optional<Type> {
+    constexpr auto next() -> Optional<reference> {
         return this->self().next();
     }
 
@@ -48,23 +38,15 @@ public:
     }
 
     ///
-    template <typename Self, std::predicate<Type> PredicateFn>
+    template <typename Self, std::predicate<reference> PredicateFn>
     [[nodiscard]]
     constexpr auto filter(this Self&& self, PredicateFn&& predicate) {
         return Filter(std::forward<Self>(self), std::forward<PredicateFn>(predicate));
     }
 
-    ///
-    template <typename Self, std::invocable<Type> MapFn>
+    template <std::predicate<reference> PredicateFn>
     [[nodiscard]]
-    constexpr auto map(this Self&& self, MapFn&& map) {
-        return Map(std::forward<Self>(self), std::forward<MapFn>(map));
-    }
-
-    ///
-    template <std::predicate<Type> PredicateFn>
-    [[nodiscard]]
-    constexpr auto find(PredicateFn predicate) -> Optional<Type> {
+    constexpr auto find(PredicateFn predicate) -> decltype(this->next()) {
         while (auto n = this->next()) {
             if (predicate(*n)) {
                 return n;
@@ -74,7 +56,13 @@ public:
     }
 
     ///
-    template <std::invocable<Type> ForEachFn>
+    template <typename Acc, std::invocable<Acc, reference> FoldFn>
+    constexpr auto fold(Acc acc, FoldFn&& fn) -> Acc {
+        return this->self().fold(std::move(acc), std::forward<FoldFn>(fn));
+    }
+
+    ///
+    template <std::invocable<reference> ForEachFn>
     constexpr void for_each(ForEachFn fn) {
         while (auto n = this->next()) {
             fn(*n);
@@ -82,11 +70,10 @@ public:
     }
 
     ///
-    template <typename Acc, std::invocable<Acc, Type> FoldFn>
-    constexpr auto fold(Acc acc, FoldFn&& fn) -> Acc {
-        // #TODO: Implementation of `fold` depends on the undelying iterator.
-        return this->self().fold(std::move(acc), std::forward<FoldFn>(fn));
-        return 0;
+    template <typename Self, std::invocable<reference> MapFn>
+    [[nodiscard]]
+    constexpr auto map(this Self&& self, MapFn&& map) {
+        return Map(std::forward<Self>(self), std::forward<MapFn>(map));
     }
 
 public:

@@ -2,65 +2,49 @@
 #include "iter/concepts.hpp"
 #include "iter/fwd.hpp"
 #include "iter/iterator.hpp"
+#include "iter/iterator_traits.hpp"
 #include "iter/optional.hpp"
 #include <type_traits>
 #include <utility>
 
 namespace iter {
 
-namespace map_impl {
-
 ///
-template <typename IteratorTraits, iterator I, std::invocable<typename I::Type> MapFn>
-class MapIterator : I {
+template <iterator I, std::invocable<reference_t<I>> MapFn>
+class [[nodiscard]] Map : public Iterator<
+                              IteratorTraits<std::invoke_result_t<MapFn, reference_t<I>>>,
+                              Map<I, MapFn>> {
 public:
-    using Traits = IteratorTraits;
-    using Type = typename Traits::Type;
+    using reference = std::invoke_result_t<MapFn, reference_t<I>>;
 
 private:
+    I m_base;
     MapFn m_map;
 
 public:
-    ///
-    constexpr MapIterator(I&& i, MapFn&& map) noexcept
-        : I(std::move(i))
+    constexpr Map(I base, MapFn map)
+        : m_base(std::move(base))
         , m_map(std::move(map)) {}
 
 public:
     ///
     [[nodiscard]]
-    constexpr auto next() -> Optional<Type> {
-        return I::next().transform(m_map);
+    constexpr auto next() -> Optional<reference> {
+        return m_base.next().transform(m_map);
+    }
+
+    ///
+    template <typename Acc, std::invocable<Acc, reference> FoldFn>
+    constexpr auto fold(Acc acc, FoldFn fn) -> Acc {
+        return m_base.fold(
+            acc, //
+            [&](const Acc acc, reference_t<I> value) { return fn(acc, m_map(value)); }
+        );
     }
 };
 
-template <iterator I, std::invocable<typename I::Type> MapFn>
-struct MapIteratorTraits {
-    using Type = std::invoke_result_t<MapFn, typename I::Type>;
-};
-
-} // namespace map_impl
-
 ///
-template <iterator I, std::invocable<typename I::Type> MapFn>
-class [[nodiscard]] Map
-    : public Iterator<
-          map_impl::MapIteratorTraits<I, MapFn>,
-          map_impl::MapIterator<map_impl::MapIteratorTraits<I, MapFn>, I, MapFn>> {
-    using Base = Iterator<
-        map_impl::MapIteratorTraits<I, MapFn>,
-        map_impl::MapIterator<map_impl::MapIteratorTraits<I, MapFn>, I, MapFn>>;
-    using MapIterator
-        = map_impl::MapIterator<map_impl::MapIteratorTraits<I, MapFn>, I, MapFn>;
-
-public:
-    ///
-    constexpr Map(I i, MapFn map) noexcept
-        : Base(MapIterator(std::move(i), std::move(map))) {}
-};
-
-///
-template <iterator I, std::predicate<typename I::Type&> PredicateFn>
-Map(I&&, PredicateFn&&) -> Map<std::decay_t<I>, std::decay_t<PredicateFn>>;
+template <iterator I, std::invocable<reference_t<I>> MapFn>
+Map(I&&, MapFn&&) -> Map<std::decay_t<I>, std::decay_t<MapFn>>;
 
 } // namespace iter
