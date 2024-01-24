@@ -1,10 +1,12 @@
 #pragma once
+#include <type_traits>
 
 namespace iter {
 
-template <typename T>
+///
+template <typename Ref>
 struct IteratorTraits {
-    using Type = T;
+    using reference = Ref;
 };
 
 } // namespace iter

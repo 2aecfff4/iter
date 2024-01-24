@@ -2,55 +2,55 @@
 #include "iter/concepts.hpp"
 #include "iter/fwd.hpp"
 #include "iter/iterator.hpp"
+#include "iter/iterator_traits.hpp"
 #include "iter/optional.hpp"
+#include <concepts>
 #include <type_traits>
 #include <utility>
 
 namespace iter {
 
-namespace filter_impl {
-
 ///
-template <iterator I, std::predicate<typename I::Type> PredicateFn>
-class FilterIterator : I {
+template <iterator I, std::predicate<reference_t<I>> FilterFn>
+class [[nodiscard]] Filter
+    : public Iterator<IteratorTraits<reference_t<I>>, Map<I, FilterFn>> {
 public:
-    using Traits = typename I::Traits;
-    using Type = typename Traits::Type;
+    using reference = reference_t<I>;
 
 private:
-    PredicateFn m_predicate;
+    I m_base;
+    FilterFn m_predicate;
 
 public:
-    ///
-    constexpr FilterIterator(I&& i, PredicateFn&& predicate) noexcept
-        : I(std::move(i))
+    constexpr Filter(I base, FilterFn predicate)
+        : m_base(std::move(base))
         , m_predicate(std::move(predicate)) {}
 
 public:
     ///
     [[nodiscard]]
-    constexpr auto next() -> Optional<Type> {
-        return I::find(m_predicate);
+    constexpr auto next() -> Optional<reference> {
+        return m_base.find(m_predicate);
+    }
+
+    ///
+    template <typename Acc, std::invocable<Acc, reference> FoldFn>
+    constexpr auto fold(Acc acc, FoldFn fn) -> Acc {
+        return m_base.fold(
+            acc, //
+            [&](const Acc acc, reference_t<I> value) {
+                if (m_predicate(value)) {
+                    return fn(acc, value);
+                }
+
+                return acc;
+            }
+        );
     }
 };
 
-} // namespace filter_impl
-
 ///
-template <iterator I, std::predicate<typename I::Type&> PredicateFn>
-class [[nodiscard]] Filter
-    : public Iterator<typename I::Traits, filter_impl::FilterIterator<I, PredicateFn>> {
-    using Base = Iterator<typename I::Traits, filter_impl::FilterIterator<I, PredicateFn>>;
-    using FilterIterator = filter_impl::FilterIterator<I, PredicateFn>;
-
-public:
-    ///
-    constexpr Filter(I i, PredicateFn predicate) noexcept
-        : Base(FilterIterator(std::move(i), std::move(predicate))) {}
-};
-
-///
-template <iterator I, std::predicate<typename I::Type&> PredicateFn>
-Filter(I&&, PredicateFn&&) -> Filter<std::decay_t<I>, std::decay_t<PredicateFn>>;
+template <iterator I, std::predicate<reference_t<I>> FilterFn>
+Filter(I&&, FilterFn&&) -> Filter<std::decay_t<I>, std::decay_t<FilterFn>>;
 
 } // namespace iter

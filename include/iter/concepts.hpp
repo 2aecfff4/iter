@@ -1,15 +1,18 @@
 #pragma once
 #include "iter/optional.hpp"
-#include <concepts>
-#include <type_traits>
+#include "iter/traits.hpp"
 
 namespace iter {
 
 ///
+template <typename O>
+concept optional = true; // #TODO:
+
+///
 template <typename I>
 concept iterator = requires(I i) {
-    typename I::Type;
-    { i.next() } -> std::same_as<Optional<typename I::Type>>;
+    typename reference_t<I>;
+    { i.next() };
 };
 
 } // namespace iter
